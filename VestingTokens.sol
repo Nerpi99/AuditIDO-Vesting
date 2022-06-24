@@ -52,6 +52,8 @@ contract VestingTokens is  OwnableUpgradeable,  ReentrancyGuardUpgradeable, Paus
         bool revoked;
         // address of the creator of 1 vesting schedule
         address creator;
+
+        uint256 creationDate;
     }
 
     // address of the ERC20 token
@@ -65,6 +67,7 @@ contract VestingTokens is  OwnableUpgradeable,  ReentrancyGuardUpgradeable, Paus
     mapping(bytes32 => VestingSchedule) private vestingSchedules;
     uint256 private vestingSchedulesTotalAmount;
     mapping(address => uint256) private holdersVestingCount;
+    uint256 public totalReleased;
 
     event Released(uint256 amount);
     event Revoked();
@@ -96,6 +99,7 @@ contract VestingTokens is  OwnableUpgradeable,  ReentrancyGuardUpgradeable, Paus
         __ReentrancyGuard_init();
         __Ownable_init();
         __Pausable_init();
+        __UUPSUpgradeable_init();
         require(token_ != address(0x0));
         require(roles_ != address(0x0));
         token = IERC20Upgradeable(token_);
@@ -195,7 +199,8 @@ contract VestingTokens is  OwnableUpgradeable,  ReentrancyGuardUpgradeable, Paus
             _amount,
             0,
             false,
-            msg.sender
+            msg.sender,
+            block.timestamp
         );
         vestingSchedulesTotalAmount = vestingSchedulesTotalAmount.add(_amount);
         vestingSchedulesIds.push(vestingScheduleId);
@@ -260,6 +265,7 @@ contract VestingTokens is  OwnableUpgradeable,  ReentrancyGuardUpgradeable, Paus
         address payable beneficiaryPayable = payable(vestingSchedule.beneficiary);
         vestingSchedulesTotalAmount = vestingSchedulesTotalAmount.sub(amount);
         token.safeTransfer(beneficiaryPayable, amount);
+        totalReleased += amount;
         emit Released(amount);
     }
 
